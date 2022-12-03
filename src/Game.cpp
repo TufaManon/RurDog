@@ -1,157 +1,172 @@
 #include "Game.h"
+#include "config.h"
 
-int main(int flagc, char* flags[])
-{
-	Game game;
-	game.start();
-	game.close();
-	return 0;
-}
-
-void Game::init()
+GAME_MODULE_BEGIN
+Game* Game::game = new Game();
+Drawer* Drawer::drawer = new Drawer();
+void Game::Init()
 
 {
 	if (SDL_Init(SDL_INIT_EVERYTHING) != 0)
 	{
-		SDL_Log("Can't init SDL");
+		SDL_Log(ERROR, "Can't init SDL");
 		SDL_Log(SDL_GetError());
 		exit(1);
 	}
 	window = SDL_CreateWindow(GAME_NAME,
 		SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
-		800, 600, SDL_WINDOW_SHOWN);
+		GAME_WINDOW_WIDTH, GAME_WINDOW_HEIGHT, SDL_WINDOW_SHOWN);
 	if (window == nullptr)
 	{
-		SDL_Log("Can't create window");
+		SDL_Log(ERROR,"Can't create window");
 		SDL_Log(SDL_GetError());
 		exit(1);
 	}
 	renderer = SDL_CreateRenderer(window,-1,0);
 	if (renderer == nullptr)
 	{
-		SDL_Log("Can't create render");
+		SDL_Log(ERROR,"Can't create renderer");
 		SDL_Log(SDL_GetError());
 		exit(1);
 	}
 }
 
-void Game::close()
+void Game::Close()
 {
+	delete stage;
 	SDL_DestroyRenderer(renderer);
 	SDL_DestroyWindow(window);
 	SDL_Quit();
 }
 
-void Game::start()
+void Game::Start()
 {
 	SDL_Event event;
 	bool quit = false;
 	while (!quit)
 	{
-		while (SDL_PollEvent(&event) != 0)
+		while (SDL_PollEvent(&event) == 1)
 		{
 			if (event.type == SDL_QUIT)
 				quit = true;
 		}
-		SDL_SetRenderDrawColor(renderer, 55, 55, 55, 1);
-		SDL_RenderClear(renderer);
-		sence.update(renderer);
-		SDL_RenderPresent(renderer);
+		stage->Update();
 	}
 }
 
-PlayerSence::PlayerSence()
+inline void Drawer::Present()
 {
-	time = 0;
-	unit.region.coord.x = 80;
-	unit.region.coord.y = 80;
-	unit.region.h = 20;
-	unit.region.w = 10;
-	unit.region.tile_size = 24;
+	SDL_RenderPresent(renderer);
 }
 
-void PlayerSence::render(SDL_Renderer* renderer)
+inline void Drawer::SetDrawColor(RGBA color)
+{
+	SDL_SetRenderDrawColor(renderer, color.red, color.green, color.blue, color.alpha * 255);
+}
+
+inline void Drawer::SetDrawColor(HSLA color)
+{
+	SetDrawColor(color.ToRGBA());
+}
+
+void Drawer::DrawBrick(const Brick& brick, SDL_Texture* texture)
+{
+	SDL_SetRenderTarget(renderer, texture);
+	DrawBrick(brick);
+}
+
+void Drawer::DrawBrick(const Brick& brick)
+{	
+	HSLA hsla(brick.color);
+	SetDrawColor(hsla);
+	SDL_Rect rect;
+	rect.x = brick.relative_coord.x * PLAYER_BRICK_SIZE;
+	rect.y = brick.relative_coord.y * PLAYER_BRICK_SIZE;
+	rect.w = PLAYER_BRICK_SIZE / 2;
+	rect.h = PLAYER_BRICK_SIZE / 2;
+	SDL_RenderFillRect(renderer, &rect);
+	hsla.saturation *= 0.8;
+	SetDrawColor(hsla);
+	rect.x += PLAYER_BRICK_SIZE / 2;
+	rect.y += PLAYER_BRICK_SIZE / 2;
+	SDL_RenderFillRect(renderer, &rect);
+	hsla.lightness *= 0.95;
+	SetDrawColor(hsla);
+	rect.y -= PLAYER_BRICK_SIZE / 2;
+	SDL_RenderFillRect(renderer, &rect);
+	SetDrawColor(hsla);
+	hsla.hue *= 0.95;
+	rect.y += PLAYER_BRICK_SIZE / 2;
+	rect.x -= PLAYER_BRICK_SIZE / 2;
+	SDL_RenderFillRect(renderer, &rect);
+
+}
+
+SDL_Texture* Drawer::DrawPlayField(const Play_Field& field)
+{
+	SDL_Texture* texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888, 
+		SDL_TextureAccess::SDL_TEXTUREACCESS_TARGET, PLAYER_BRICK_SIZE * 10, PLAYER_BRICK_SIZE * 22);
+	SDL_SetRenderTarget(renderer, texture);
+	for (int y = 0; y < 22; y++)
+		for (int x = 0; x < 10; x++)
+			DrawBrick(field.field_brick[y][x]);
+	auto falling = field.GetFalling();
+	for (const auto& brick : falling)
+		DrawBrick(brick);
+	SDL_SetRenderTarget(renderer, NULL);
+	return texture;
+}
+
+void Drawer::DrawTextrue(SDL_Texture* texture, const SDL_Rect& s, const SDL_Rect& t)
+{
+	SDL_RenderCopy(renderer, texture, &s, &t);
+}
+
+void Drawer::DrawTextrue(SDL_Texture* texture)
 {
 	SDL_Rect rect;
-	rect.x = unit.region.coord.x;
-	rect.y = unit.region.coord.y;
-	rect.w = unit.region.w * unit.region.tile_size;
-	rect.h = unit.region.h * unit.region.tile_size;
-	SDL_SetRenderDrawColor(renderer, 123, 2, 123, 1);
-	SDL_RenderDrawRect(renderer, &rect);
-	rect.w = unit.region.tile_size;
-	rect.h = unit.region.tile_size;
-	for (int y = 0; y < 23; y++)
-		for (int x = 0; x < 10; x++)
-		{
-			auto block = unit.world[y][x];
-			if (block.region_coord.y > 2)
-			{
-				rect.x = unit.region.coord.x + block.region_coord.x * unit.region.tile_size;
-				rect.y = unit.region.coord.y + (block.region_coord.y - 3) * unit.region.tile_size;
-				SDL_SetRenderDrawColor(renderer, block.color.r, block.color.g, block.color.b, block.color.a);
-				SDL_RenderFillRect(renderer, &rect);
-				if (block.empty_block)
-				{
-					SDL_SetRenderDrawColor(renderer, 55, 55, 55, 1);
-					SDL_RenderDrawRect(renderer, &rect);
-				}
-			}
-		}
-	if (unit.HasActor())
-	{
-		for (int i = 0; i < 4; i++)
-		{
-			if (unit.actor->blocks[i].region_coord.y > 2)
-			{
-				rect.x = unit.region.coord.x + unit.actor->blocks[i].region_coord.x * unit.region.tile_size;
-				rect.y = unit.region.coord.y + (unit.actor->blocks[i].region_coord.y - 3) * unit.region.tile_size;
-				SDL_SetRenderDrawColor(renderer, 
-					unit.actor->blocks[i].color.r, 
-					unit.actor->blocks[i].color.g, 
-					unit.actor->blocks[i].color.b, 
-					unit.actor->blocks[i].color.a);
-				SDL_RenderFillRect(renderer, &rect);
-				SDL_RenderDrawRect(renderer, &rect);
-
-			}
-		}
-	}
-
+	rect.x = 30;
+	rect.y = 20;
+	rect.w = 10 * 32;
+	rect.h = 22 * 32;
+	SDL_RenderCopy(renderer, texture, NULL, &rect);
 }
 
-void PlayerSence::update(SDL_Renderer* renderer)
+
+bool Play_Stage::Auto_Fall(uint64_t time)
 {
-	if (SDL_GetTicks64() - time > speed && action == NORMAL)
+	if (time >= fall_time)
 	{
-		if (unit.HasActor())
-		{
-			unit.ActorFall();
-			
-			time = SDL_GetTicks64();
-		}
-
-		else unit.CreatActor();
-
-		for (auto it = unit.signal.begin(); it != unit.signal.end();)
-		{
-			if (*it == unit.FALL_COMPELET)
-			{
-				this->action = BEFORE_CLOCK;
-				time = SDL_GetTicks64();
-				it = unit.signal.erase(it);
-			}
-			else it++;
-		}
+		play_field.Down();
+		auto_fall = true;
+		return true;
 	}
-	else if (action == BEFORE_CLOCK)
-	{
-		//listen move and rotation
-		if (SDL_GetTicks64() - time > 1000)
-		{
-			unit.LockActor();
-			action = NORMAL;
-		}
-	}
-	render(renderer);
+	return false;
 }
+
+void Play_Stage::Next_Count()
+{
+	play_field.Locking();
+}
+
+void Play_Stage::UpdateContent()
+{
+	CheckAutoFall();
+	auto texture = Drawer::GetDrawer().DrawPlayField(play_field);
+
+	Drawer::GetDrawer().Clear();
+	Drawer::GetDrawer().DrawTextrue(texture);
+	Drawer::GetDrawer().Present();
+
+	SDL_DestroyTexture(texture);
+}
+void Play_Stage::CheckAutoFall()
+{	
+	if (auto_fall)
+	{
+		UnblockingAct(std::bind(&Play_Stage::Auto_Fall, this, std::placeholders::_1), fall_time);
+		auto_fall = false;
+	}
+}
+GAME_MODULE_END
+
