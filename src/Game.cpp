@@ -18,14 +18,14 @@ void Game::Init()
 		GAME_WINDOW_WIDTH, GAME_WINDOW_HEIGHT, SDL_WINDOW_SHOWN);
 	if (window == nullptr)
 	{
-		SDL_Log(ERROR,"Can't create window");
+		SDL_Log(ERROR, "Can't create window");
 		SDL_Log(SDL_GetError());
 		exit(1);
 	}
-	renderer = SDL_CreateRenderer(window,-1,0);
+	renderer = SDL_CreateRenderer(window, -1, 0);
 	if (renderer == nullptr)
 	{
-		SDL_Log(ERROR,"Can't create renderer");
+		SDL_Log(ERROR, "Can't create renderer");
 		SDL_Log(SDL_GetError());
 		exit(1);
 	}
@@ -69,50 +69,42 @@ inline void Drawer::SetDrawColor(HSLA color)
 	SetDrawColor(color.ToRGBA());
 }
 
-void Drawer::DrawBrick(const Brick& brick, SDL_Texture* texture)
+inline void Drawer::DrawBrick(const Piece& brick, SDL_Texture* texture)
 {
 	SDL_SetRenderTarget(renderer, texture);
 	DrawBrick(brick);
 }
 
-void Drawer::DrawBrick(const Brick& brick)
-{	
-	HSLA hsla(brick.color);
+void Drawer::DrawBrick(const Piece& piece)
+{
+	HSLA hsla(piece.color);
 	SetDrawColor(hsla);
 	SDL_Rect rect;
-	rect.x = brick.relative_coord.x * PLAYER_BRICK_SIZE;
-	rect.y = brick.relative_coord.y * PLAYER_BRICK_SIZE;
-	rect.w = PLAYER_BRICK_SIZE / 2;
-	rect.h = PLAYER_BRICK_SIZE / 2;
+	int draw_piece_size = PLAYER_BRICK_SIZE;
+	rect.x = piece.relative_coord.x * PLAYER_BRICK_SIZE;
+	rect.y = piece.relative_coord.y * PLAYER_BRICK_SIZE;
+	rect.w = rect.h = draw_piece_size;
 	SDL_RenderFillRect(renderer, &rect);
-	hsla.saturation *= 0.8;
+	hsla.lightness += (1 - hsla.lightness) * 0.2;
+	hsla.saturation *= 0.95;
+	if (hsla.hue < 350)
+		hsla.hue += 10;
 	SetDrawColor(hsla);
-	rect.x += PLAYER_BRICK_SIZE / 2;
-	rect.y += PLAYER_BRICK_SIZE / 2;
-	SDL_RenderFillRect(renderer, &rect);
-	hsla.lightness *= 0.95;
-	SetDrawColor(hsla);
-	rect.y -= PLAYER_BRICK_SIZE / 2;
-	SDL_RenderFillRect(renderer, &rect);
-	SetDrawColor(hsla);
-	hsla.hue *= 0.95;
-	rect.y += PLAYER_BRICK_SIZE / 2;
-	rect.x -= PLAYER_BRICK_SIZE / 2;
-	SDL_RenderFillRect(renderer, &rect);
-
+	SDL_RenderDrawRect(renderer, &rect);
 }
 
 SDL_Texture* Drawer::DrawPlayField(const Play_Field& field)
 {
-	SDL_Texture* texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888, 
+	SDL_Texture* texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888,
 		SDL_TextureAccess::SDL_TEXTUREACCESS_TARGET, PLAYER_BRICK_SIZE * 10, PLAYER_BRICK_SIZE * 22);
 	SDL_SetRenderTarget(renderer, texture);
 	for (int y = 0; y < 22; y++)
 		for (int x = 0; x < 10; x++)
-			DrawBrick(field.field_brick[y][x]);
-	auto falling = field.GetFalling();
-	for (const auto& brick : falling)
-		DrawBrick(brick);
+			DrawBrick(field.field_backs[y][x]);
+	auto falling = field.GetFallingMinoAbsCoord();
+	for (const auto& piece : falling)
+		//if(piece.relative_coord.y >= 2)
+		DrawBrick(piece);
 	SDL_SetRenderTarget(renderer, NULL);
 	return texture;
 }
@@ -137,7 +129,8 @@ bool Play_Stage::Auto_Fall(uint64_t time)
 {
 	if (time >= fall_time)
 	{
-		play_field.Down();
+		play_field.Drop();
+		play_field.Rotation(_Ori::R);
 		auto_fall = true;
 		return true;
 	}
@@ -161,7 +154,7 @@ void Play_Stage::UpdateContent()
 	SDL_DestroyTexture(texture);
 }
 void Play_Stage::CheckAutoFall()
-{	
+{
 	if (auto_fall)
 	{
 		UnblockingAct(std::bind(&Play_Stage::Auto_Fall, this, std::placeholders::_1), fall_time);

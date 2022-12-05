@@ -12,8 +12,8 @@ public:
 	{
 		play_field.ConnectSignal(play_field.SIGNAL_TOUCH_OBSTACLE, std::bind(&Play_Stage::Next_Count, this));
 	}
+	uint32_t fall_time = 500;
 	bool auto_fall = true;
-	uint64_t fall_time = 200;
 	bool Auto_Fall(uint64_t time);
 	void Next_Count();
 	void UpdateContent() override;
@@ -73,8 +73,8 @@ public:
 	const Drawer& operator=(Drawer&) = delete;
 	void SetDrawColor(RGBA color);
 	void SetDrawColor(HSLA color);
-	void DrawBrick(const Brick& brick, SDL_Texture* texture);
-	void DrawBrick(const Brick& brick);
+	void DrawBrick(const Piece& brick, SDL_Texture* texture);
+	void DrawBrick(const Piece& brick);
 	SDL_Texture* DrawPlayField(const Play_Field& field);
 	void DrawTextrue(SDL_Texture* texture,const SDL_Rect& src, const SDL_Rect& dest);
 	void DrawTextrue(SDL_Texture* texture);

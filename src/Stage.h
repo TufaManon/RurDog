@@ -41,7 +41,7 @@ enum class _Tetrmino_Rotation_Orientation
 {
 	L, R
 };
-using Ori = _Tetrmino_Rotation_Orientation;
+using _Ori = _Tetrmino_Rotation_Orientation;
 
 constexpr auto IS_I(_Tetrmino_Class type)
 {
@@ -78,30 +78,32 @@ constexpr auto IS_Z(_Tetrmino_Class type)
 		{Coord(n1, n2), Coord(n3, n4), Coord(n5, n6), Coord(n7, n8), Coord(n9, n10)}
 
 //旋转的平移测试，将旋转后的坐标减去不同形态的偏移数据之差，来确定是否可以旋转。
+// It is the data to Testing how the tetrmino ratate by computing the difference of the different state;
 const std::array<Coordinate, 5> JLSTZ_0_OFFSET 
 	= WALL_KICK_DATE(0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
 const std::array<Coordinate, 5> JLSTZ_R_OFFSET 
-	= WALL_KICK_DATE(0, 0, +1, 0, +1, -1, 0, +2, +1, +2);
+	= WALL_KICK_DATE(0, 0, +1, 0, +1, +1, 0, -2, +1, -2);
 const std::array<Coordinate, 5> JLSTZ_2_OFFSET 
 	= WALL_KICK_DATE(0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
 const std::array<Coordinate, 5> JLSTZ_L_OFFSET 
-	= WALL_KICK_DATE(0, 0, -1, 0, -1, -1, 0, +2, -1, +2);
+	= WALL_KICK_DATE(0, 0, -1, 0, -1, +1, 0, -2, -1, -2);
 
 //旋转的平移测试，将旋转后的坐标减去不同形态的偏移数据之差，来确定是否可以旋转。
+// It is the data to Testing how the tetrmino ratate by computing the difference of the different state;
 const std::array<Coordinate, 5> I_0_OFFSET 
 	= WALL_KICK_DATE(0, 0, -1, 0, +2, 0, -1, 0, +2, 0);
 const std::array<Coordinate, 5> I_R_OFFSET 
-	= WALL_KICK_DATE(-1, 0, 0, 0, 0, 0, 0, +1, 0, -2);
+	= WALL_KICK_DATE(-1, 0, 0, 0, 0, 0, 0, -1, 0, +2);
 const std::array<Coordinate, 5> I_2_OFFSET 
-	= WALL_KICK_DATE(-1, +1, +1, +1, -2, +1, +1, 0, -2, 0);
+	= WALL_KICK_DATE(-1, -1, +1, -1, -2, -1, +1, 0, -2, 0);
 const std::array<Coordinate, 5> I_L_OFFSET 
-	= WALL_KICK_DATE(0, +1, 0, +1, 0, +1, 0, -1, 0, +2);
+	= WALL_KICK_DATE(0, -1, 0, -1, 0, -1, 0, +1, 0, -2);
 const Coordinate O_0_OFFSET = Coord(0, 0);
-const Coordinate O_R_OFFSET = Coord(0, -1);
-const Coordinate O_2_OFFSET = Coord(-1, -1);
+const Coordinate O_R_OFFSET = Coord(0, +1);
+const Coordinate O_2_OFFSET = Coord(-1, +1);
 const Coordinate O_L_OFFSET = Coord(-1, 0);
 
-struct Brick
+struct Piece
 {
 	//It indicates the brick is non-existent
 	static const uint8_t BRICK_INVALIDE = 0;
@@ -125,12 +127,11 @@ inline std::array<Coordinate, 5> operator-(const std::array<Coordinate,5>& left,
 }
 struct Tetrmino
 {
-	using Box = Coordinate;
 	// the bounding box different between I or O and S or Z or L or T or  J. the former has 4*4 box and the latter has 3*3 box;
-	Box bounding_box;
+	Coordinate bounding_box;
 
 	// the pieces witch has coordinate relative to the bounding box;
-	std::array<Brick,4> pieces;
+	std::array<Piece,4> pieces;
 
 	_Tetrmino_Class type;
 
@@ -146,7 +147,16 @@ struct Tetrmino
 
 	void SetColor(HSLA color, int index);
 
-	Tetrmino& operator=(Tetrmino& right);
+	Tetrmino& operator=(const Tetrmino& right);
+
+	Tetrmino(const Tetrmino& right);
+
+	Tetrmino()
+	{
+		bounding_box.x = bounding_box.y = 0;
+		state = _Tetrmino_State::_0;
+		type = _Tetrmino_Class::I;
+	}
 
 	std::array<Coordinate,5> GetOffSet(_Tetrmino_State state) const 
 	{
@@ -157,20 +167,20 @@ struct Tetrmino
 		return GetOOffsetTable(this->state) - GetOOffsetTable(state);
 	}
 
-	const Tetrmino Rotate(Ori ori, int test = 0) const;
+	const Tetrmino Rotate(_Ori ori, int test = 0) const;
 
 private:
 
-	const _Tetrmino_State GetNextState(Ori ori) const
+	const _Tetrmino_State GetNextState(_Ori ori) const
 	{
-		if (ori == Ori::R)
+		if (ori == _Ori::R)
 		{
 			return state >> 1;
 		}
 		else return state << 1;
 	}
 
-	const void CenterRotation(Ori ori);
+	const void CenterRotation(_Ori ori);
 
 	const std::array<Coordinate, 5>& GetOffsetTable(_Tetrmino_State state) const 
 	{
@@ -187,8 +197,8 @@ private:
 			if (state == _Tetrmino_State::R) return I_R_OFFSET;
 			if (state == _Tetrmino_State::_2) return I_2_OFFSET;
 			if (state == _Tetrmino_State::L) return I_L_OFFSET;
-			return I_0_OFFSET;
 		}
+		return I_0_OFFSET;
 	}
 
 	const Coordinate GetOOffsetTable(_Tetrmino_State state) const
@@ -221,16 +231,16 @@ public:
 	_Tetrmino_Class GetNextTetrMinoType();
 };
 
-struct Fn
+struct FlagFn
 {
-	int flag;
+	int flag = 0;
 	std::function<void(void)> fn;
 };
 
 class Signaler
 {
 private:
-	std::map<int, std::vector<Fn>> map;
+	std::map<int, std::vector<FlagFn>> map;
 	int flag = 0;
 protected:
 	void Emit(int signal);
@@ -238,7 +248,7 @@ protected:
 public:
 	Signaler() = delete;
 	int ConnectSignal(int signal, std::function<void(void)> fn);
-	void DesconnectSignal(int signal, int flag);
+	void DisconnectSignal(int signal, int flag);
 };
 
 struct Harm
@@ -302,39 +312,40 @@ public:
 
 class Play_Field: public Signaler
 {
-	bool swap = false;
 	Random_Generator generator;
 	Tetrmino* falling;
 	Tetrmino* hold;
 	std::queue<Harm> received_harm_queue;
 	std::queue<Harm> emitted_harm_queue;
-	std::queue<Tetrmino*> coming_tetrminoes;
+	std::queue<Tetrmino*> next_queue;
+	bool game_over = false;
 	std::array<Coordinate, 4> Get_Field_Coord(const Tetrmino& mino) const;
-	bool IsNotInOBSTACLE(const Tetrmino& mino) const;
+	bool IsNotInObstacle(const Tetrmino& mino) const;
 	Tetrmino* CreateTetrmino();
+	bool FallingPiecesCoordsAre(std::function<bool(const Coordinate&)> fn);
+
 public:
 	static const int SIGNAL_LOCKED = 1 << 0;
 	static const int SIGNAL_TOUCH_OBSTACLE = 1 << 1;
-	Brick field_brick[22][10];
-	std::array<Brick,4> GetFalling() const;
-	Play_Field():Signaler({SIGNAL_LOCKED, SIGNAL_TOUCH_OBSTACLE})
-	{
-		falling = CreateTetrmino();
-		hold = CreateTetrmino();
-		for (int i = 0; i < 22; i++)
-			for (int j = 0; j < 10; j++)
-				field_brick[i][j].relative_coord = Coord(j, i);
-	}
+	static const int SIGNAL_GAME_OVER = 1 << 2;
+	Piece field_backs[22][10];
+	void EacBacks(std::function<void(const Piece&)> fn);
+	std::array<Piece,4> GetFallingMinoAbsCoord() const;
+	Play_Field();
 	void Locking();
-	//swap current tetrmino and hold tetrmino, in the tetrmino guidline, only swap noce from start fall to lock
+	//swap current tetrmino and hold tetrmino, in the tetrmino guidline, only swapping once from start falling to locked.
 	void Swaping();
 	//test whether the given tetrmino can rotation for given orientation, if it can rotation, will change the given tetrmino to rotated tetrmino.
-	bool TestingRotation(Tetrmino& mino, Ori orientation);
-	bool Rotation(Ori orientation);
-	bool Moving(Ori orientation);
-	bool TestMoving(Tetrmino& mino,Ori orientation);
-	bool Down();
-	bool TestDown(Tetrmino& mino);
+	bool TestingRotation(Tetrmino& mino, _Ori orientation);
+	bool Rotation(_Ori orientation);
+	bool Moving(_Ori orientation);
+	bool TestingMoving(Tetrmino& mino,_Ori orientation);
+	bool Drop();
+	bool TestingDrop(Tetrmino& mino);
+	bool IsGameOver()
+	{
+		return game_over;
+	}
 };
 
 STAGE_MODULE_END

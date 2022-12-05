@@ -41,7 +41,6 @@ T Min(const std::initializer_list<T> list)
 	}
 	return min;
 }
-struct HSLA;
 struct RGBA
 {
 private:
@@ -243,7 +242,7 @@ private:
 #define RED_COLOR RGBA(RED)
 #define BLUE_COLOR RGBA(BLUE)
 #define ORANGE_COLOR RGBA(ORANGE)
-
+#define BACKGROUND_COLOR RGBA(BACKGROUND)
 struct Coordinate
 {
 	int16_t x, y;
@@ -278,6 +277,7 @@ struct Coordinate
 		this->y = right.y;
 		return *this;
 	}
+
 	const Coordinate operator-(const Coordinate& right) const
 	{
 		return Coordinate(x - right.x, y - right.y);

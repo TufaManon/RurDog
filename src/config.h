@@ -1,9 +1,18 @@
 #pragma once
 #define DEBUG_MODE
+
 constexpr auto GAME_WINDOW_WIDTH = 1280;
 constexpr auto GAME_WINDOW_HEIGHT = 800;
 constexpr auto PLAYER_BRICK_SIZE = 32;
 constexpr auto NET_PLAYER_BRICK_SIZE = 4;
+//锁定延迟
+constexpr auto LOCK_DELAY = 0.5;
+//自动移动延迟
+constexpr auto DAS_FRAMES = 10;
+//自动重复速率
+constexpr auto ARR_FRAMES = 2;
+//进入延迟
+constexpr auto ARE_FRAMES = 6;
 
 #define STAGE_MODULE_BEGIN namespace RurDog {
 #define STAGE_MODULE_END }
@@ -20,6 +29,7 @@ constexpr auto GREEN = "#40de5a";
 constexpr auto RED = "#ff461f";
 constexpr auto BLUE = "#44cef6";
 constexpr auto ORANGE = "#ea5506";
+constexpr auto BACKGROUND = "#ddd";
 
 constexpr auto WARNNING = "[warn]: %s";
 constexpr auto ERROR = "[ERROR]: %s";
