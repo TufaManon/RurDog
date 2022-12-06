@@ -1,23 +1,20 @@
 #pragma once
 #define DEBUG_MODE
+#include <time.h>
+#include <string>
+#include <SDL.h>
 
 constexpr auto GAME_WINDOW_WIDTH = 1280;
 constexpr auto GAME_WINDOW_HEIGHT = 800;
 constexpr auto PLAYER_BRICK_SIZE = 32;
 constexpr auto NET_PLAYER_BRICK_SIZE = 4;
 //锁定延迟
-constexpr auto LOCK_DELAY = 0.5;
+constexpr auto LOCK_DELAY = 500;
 //自动移动延迟
-constexpr auto DAS_FRAMES = 10;
+constexpr auto DAS = 99;
 //自动重复速率
-constexpr auto ARR_FRAMES = 2;
-//进入延迟
-constexpr auto ARE_FRAMES = 6;
+constexpr auto ARR = 33;
 
-#define STAGE_MODULE_BEGIN namespace RurDog {
-#define STAGE_MODULE_END }
-#define DRAW_MODULE_BEGIN namespace RurDog {
-#define DRAW_MODULE_END }
 #define GAME_MODULE_BEGIN namespace RurDog {
 #define GAME_MODULE_END }
 
@@ -30,17 +27,22 @@ constexpr auto RED = "#ff461f";
 constexpr auto BLUE = "#44cef6";
 constexpr auto ORANGE = "#ea5506";
 constexpr auto BACKGROUND = "#ddd";
-
-constexpr auto WARNNING = "[warn]: %s";
-constexpr auto ERROR = "[ERROR]: %s";
-constexpr auto DEBUG = "[DEBUG]: %s";
-
+#define DEBUG_MARK "[DEBUG]: "
 #ifdef DEBUG_MODE
-
-#define DEBUG(x) SDL_Log(ERROR,x)
-#define WARNNING(x) SDL_Log(WARNNING,x)
-#define ERROR(x) SDL_Log(ERROR,x)
-
+#define TIME_STAMP "\t --%s "
+inline void Debug(const char* s)
+{
+	std::string str(DEBUG_MARK);
+	str.append(s);
+	str.append(TIME_STAMP);
+	auto t = time(NULL);
+	SDL_Log(str.c_str(), asctime(localtime(&t)));
+}
+#else 
+inline void Debud(const char* s)
+{
+	return;
+}
 #endif
 
 

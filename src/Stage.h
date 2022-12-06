@@ -11,7 +11,7 @@
 #include <stack>
 #include "config.h"
 #include "utils.h"
-STAGE_MODULE_BEGIN
+GAME_MODULE_BEGIN
 
 enum class _Tetrmino_Class
 {
@@ -79,25 +79,25 @@ constexpr auto IS_Z(_Tetrmino_Class type)
 
 //旋转的平移测试，将旋转后的坐标减去不同形态的偏移数据之差，来确定是否可以旋转。
 // It is the data to Testing how the tetrmino ratate by computing the difference of the different state;
-const std::array<Coordinate, 5> JLSTZ_0_OFFSET 
-	= WALL_KICK_DATE(0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
-const std::array<Coordinate, 5> JLSTZ_R_OFFSET 
-	= WALL_KICK_DATE(0, 0, +1, 0, +1, +1, 0, -2, +1, -2);
-const std::array<Coordinate, 5> JLSTZ_2_OFFSET 
-	= WALL_KICK_DATE(0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
-const std::array<Coordinate, 5> JLSTZ_L_OFFSET 
-	= WALL_KICK_DATE(0, 0, -1, 0, -1, +1, 0, -2, -1, -2);
+const std::array<Coordinate, 5> JLSTZ_0_OFFSET
+= WALL_KICK_DATE(0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+const std::array<Coordinate, 5> JLSTZ_R_OFFSET
+= WALL_KICK_DATE(0, 0, +1, 0, +1, +1, 0, -2, +1, -2);
+const std::array<Coordinate, 5> JLSTZ_2_OFFSET
+= WALL_KICK_DATE(0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+const std::array<Coordinate, 5> JLSTZ_L_OFFSET
+= WALL_KICK_DATE(0, 0, -1, 0, -1, +1, 0, -2, -1, -2);
 
 //旋转的平移测试，将旋转后的坐标减去不同形态的偏移数据之差，来确定是否可以旋转。
 // It is the data to Testing how the tetrmino ratate by computing the difference of the different state;
-const std::array<Coordinate, 5> I_0_OFFSET 
-	= WALL_KICK_DATE(0, 0, -1, 0, +2, 0, -1, 0, +2, 0);
-const std::array<Coordinate, 5> I_R_OFFSET 
-	= WALL_KICK_DATE(-1, 0, 0, 0, 0, 0, 0, -1, 0, +2);
-const std::array<Coordinate, 5> I_2_OFFSET 
-	= WALL_KICK_DATE(-1, -1, +1, -1, -2, -1, +1, 0, -2, 0);
-const std::array<Coordinate, 5> I_L_OFFSET 
-	= WALL_KICK_DATE(0, -1, 0, -1, 0, -1, 0, +1, 0, -2);
+const std::array<Coordinate, 5> I_0_OFFSET
+= WALL_KICK_DATE(0, 0, -1, 0, +2, 0, -1, 0, +2, 0);
+const std::array<Coordinate, 5> I_R_OFFSET
+= WALL_KICK_DATE(-1, 0, 0, 0, 0, 0, 0, -1, 0, +2);
+const std::array<Coordinate, 5> I_2_OFFSET
+= WALL_KICK_DATE(-1, -1, +1, -1, -2, -1, +1, 0, -2, 0);
+const std::array<Coordinate, 5> I_L_OFFSET
+= WALL_KICK_DATE(0, -1, 0, -1, 0, -1, 0, +1, 0, -2);
 const Coordinate O_0_OFFSET = Coord(0, 0);
 const Coordinate O_R_OFFSET = Coord(0, +1);
 const Coordinate O_2_OFFSET = Coord(-1, +1);
@@ -113,7 +113,7 @@ struct Piece
 
 	// the color is used by renderer to set draw color of brick
 	RGBA color;
-	
+
 	//the coord is relative to the playfield wicth is controled by a player or the bounding box;
 	Coordinate relative_coord;
 
@@ -121,9 +121,9 @@ struct Piece
 	uint8_t flag = BRICK_INVALIDE;
 };
 
-inline std::array<Coordinate, 5> operator-(const std::array<Coordinate,5>& left, const std::array<Coordinate, 5>& right)
+inline std::array<Coordinate, 5> operator-(const std::array<Coordinate, 5>& left, const std::array<Coordinate, 5>& right)
 {
-	return {left.at(0) - right.at(0), left.at(1) - right.at(1), left.at(2) - right.at(2), left.at(3) - right.at(3), left.at(4) - right.at(4)};
+	return { left.at(0) - right.at(0), left.at(1) - right.at(1), left.at(2) - right.at(2), left.at(3) - right.at(3), left.at(4) - right.at(4) };
 }
 struct Tetrmino
 {
@@ -131,21 +131,14 @@ struct Tetrmino
 	Coordinate bounding_box;
 
 	// the pieces witch has coordinate relative to the bounding box;
-	std::array<Piece,4> pieces;
+	std::array<Piece, 4> pieces;
 
 	_Tetrmino_Class type;
 
 	_Tetrmino_State state;
-	
+
 	// set all 4 brick color
-	void SetColor(RGBA color);
-
-	void SetColor(HSLA color);
-
-	// set brick of the terimino color by index
-	void SetColor(RGBA color, int index);
-
-	void SetColor(HSLA color, int index);
+	void SetColor(const RGBA& color);
 
 	Tetrmino& operator=(const Tetrmino& right);
 
@@ -158,7 +151,7 @@ struct Tetrmino
 		type = _Tetrmino_Class::I;
 	}
 
-	std::array<Coordinate,5> GetOffSet(_Tetrmino_State state) const 
+	std::array<Coordinate, 5> GetOffSet(_Tetrmino_State state) const
 	{
 		return GetOffsetTable(this->state) - GetOffsetTable(state);
 	}
@@ -182,7 +175,7 @@ private:
 
 	const void CenterRotation(_Ori ori);
 
-	const std::array<Coordinate, 5>& GetOffsetTable(_Tetrmino_State state) const 
+	const std::array<Coordinate, 5>& GetOffsetTable(_Tetrmino_State state) const
 	{
 		if (IS_J(type) || IS_L(type) || IS_S(type) || IS_T(type) || IS_Z(type))
 		{
@@ -255,62 +248,7 @@ struct Harm
 {
 
 };
-
-class Stage
-{
-private:
-	struct Task
-	{
-		std::function<bool(uint64_t)> fn;
-		uint64_t begin;
-		uint64_t duratin;
-	};
-public:
-	std::vector<Task> tasks{};
-	Stage()
-	{
-		if (!SDL_WasInit(SDL_INIT_TIMER))
-		{
-			SDL_Log(WARNNING,"the timer subsystem hadn't been inited when the stage class init");
-		}
-	}
-
-	void BlockingAct(std::function<bool(uint64_t)> fn, uint64_t duration)
-	{
-		auto time = SDL_GetTicks64() + duration;
-		while (SDL_GetTicks64() < time)
-		{
-			if(fn(SDL_GetTicks64() - time)) return;
-		}
-	}	
-
-	void UnblockingAct(std::function<bool(uint64_t)> fn, uint64_t duration)
-	{
-		Task task{ fn,SDL_GetTicks64(),duration };
-		tasks.push_back(task);
-	}
-
-	virtual void UpdateContent() = 0;
-
-	void Update()
-	{
-		for (auto it = tasks.begin(); it != tasks.end();)
-		{
-			if ((*it).fn(SDL_GetTicks64() - (*it).begin))
-			{
-				it = tasks.erase(it);
-			}
-			else
-			{
-				it++;
-			}
-		}
-
-		UpdateContent();
-	}
-};
-
-class Play_Field: public Signaler
+class Play_Field : public Signaler
 {
 	Random_Generator generator;
 	Tetrmino* falling;
@@ -323,29 +261,37 @@ class Play_Field: public Signaler
 	bool IsNotInObstacle(const Tetrmino& mino) const;
 	Tetrmino* CreateTetrmino();
 	bool FallingPiecesCoordsAre(std::function<bool(const Coordinate&)> fn);
-
+	void EachBackInner(std::function<void(Piece&)> fn);
+	void EachBackInner(std::function<void(Piece&, int x, int y)> fn);
 public:
 	static const int SIGNAL_LOCKED = 1 << 0;
 	static const int SIGNAL_TOUCH_OBSTACLE = 1 << 1;
 	static const int SIGNAL_GAME_OVER = 1 << 2;
 	Piece field_backs[22][10];
-	void EacBacks(std::function<void(const Piece&)> fn);
-	std::array<Piece,4> GetFallingMinoAbsCoord() const;
+	void EachBack(std::function<void(const Piece&)> fn) const;
+	void EachBack(std::function<void(const Piece&, int x, int y)> fn) const;
+	std::array<Piece, 4> GetFallingMinoAbsCoord() const;
+	const Tetrmino& GetFalling() const
+	{
+		return *falling;
+	}
 	Play_Field();
-	void Locking();
+	void Lock();
+	bool CheckColEli(int col);
+	bool Eli();
 	//swap current tetrmino and hold tetrmino, in the tetrmino guidline, only swapping once from start falling to locked.
-	void Swaping();
+	bool Swap();
 	//test whether the given tetrmino can rotation for given orientation, if it can rotation, will change the given tetrmino to rotated tetrmino.
-	bool TestingRotation(Tetrmino& mino, _Ori orientation);
-	bool Rotation(_Ori orientation);
-	bool Moving(_Ori orientation);
-	bool TestingMoving(Tetrmino& mino,_Ori orientation);
+	bool TestingRotate(Tetrmino& mino, _Ori orientation) const;
+	bool Rotate(_Ori orientation);
+	bool Move(_Ori orientation);
+	bool TestingMove(Tetrmino& mino, _Ori orientation) const;
 	bool Drop();
-	bool TestingDrop(Tetrmino& mino);
+	bool TestingDrop(Tetrmino& mino) const;
 	bool IsGameOver()
 	{
 		return game_over;
 	}
 };
 
-STAGE_MODULE_END
+GAME_MODULE_END

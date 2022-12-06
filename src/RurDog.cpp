@@ -4,6 +4,6 @@ using RurDog::Game;
 int main(int argc, int arcs)
 {
 	Game::GetGame().Start();
-	Game::GetGame().Destory();
+	Game::Destory();
 	return 0;
 }

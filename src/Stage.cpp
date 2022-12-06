@@ -1,5 +1,5 @@
 #include "Stage.h"
-STAGE_MODULE_BEGIN
+GAME_MODULE_BEGIN
 _Tetrmino_Class Random_Generator::GetNextTetrMinoType()
 {
 	if (TouchTheTop())
@@ -15,29 +15,13 @@ _Tetrmino_Class Random_Generator::GetNextTetrMinoType()
 	return types[top - 1];
 }
 
-void Tetrmino::SetColor(RGBA color)
+void Tetrmino::SetColor(const RGBA& color)
 {
 	for (int i = 0; i < pieces.size(); i++)
 	{
 		pieces.at(i).color = color;
 	}
 }
-
-void Tetrmino::SetColor(HSLA color)
-{
-	SetColor(color.ToRGBA());
-}
-
-void Tetrmino::SetColor(RGBA color, int index)
-{
-	pieces.at(index).color = color;
-}
-
-void Tetrmino::SetColor(HSLA color, int index)
-{
-	SetColor(color.ToRGBA(), index);
-}
-
 Tetrmino& Tetrmino::operator=(const Tetrmino& right)
 {
 	this->bounding_box = right.bounding_box;
@@ -57,7 +41,7 @@ const Tetrmino Tetrmino::Rotate(_Ori ori, int test) const
 {
 	auto s = GetNextState(ori);
 	Tetrmino mino = *this;
-	mino.state = GetNextState(ori);
+	mino.state = s;
 	mino.CenterRotation(ori);
 	if (type == _Tetrmino_Class::O)
 	{
@@ -157,7 +141,7 @@ bool Play_Field::IsNotInObstacle(const Tetrmino& mino) const
 	bool res = true;
 	for (const auto& c : i)
 	{
-		res &= (c.y < 22 && c.x < 10) && (field_backs[c.y][c.x].flag == Piece::BRICK_INVALIDE);
+		res &= (c.y < 22 && c.x < 10 && c.y >= 0 && c.x >= 0) && (field_backs[c.y][c.x].flag == Piece::BRICK_INVALIDE);
 	}
 	return res;
 }
@@ -245,11 +229,32 @@ bool Play_Field::FallingPiecesCoordsAre(std::function<bool(const Coordinate&)> f
 	return true;
 }
 
-void Play_Field::EacBacks(std::function<void(const Piece&)> fn)
+void Play_Field::EachBackInner(std::function<void(Piece&)> fn)
 {
 	for (int i = 0; i < 22; i++)
 		for (int j = 0; j < 10; j++)
 			fn(field_backs[i][j]);
+}
+
+void Play_Field::EachBackInner(std::function<void(Piece&, int x, int y)> fn)
+{
+	for (int i = 0; i < 22; i++)
+		for (int j = 0; j < 10; j++)
+			fn(field_backs[i][j], j, i);
+}
+
+void Play_Field::EachBack(std::function<void(const Piece&)> fn) const
+{
+	for (int i = 0; i < 22; i++)
+		for (int j = 0; j < 10; j++)
+			fn(field_backs[i][j]);
+}
+
+void Play_Field::EachBack(std::function<void(const Piece&, int x, int y)> fn) const
+{
+	for (int i = 0; i < 22; i++)
+		for (int j = 0; j < 10; j++)
+			fn(field_backs[i][j], j, i);
 }
 
 std::array<Piece, 4> Play_Field::GetFallingMinoAbsCoord() const
@@ -262,38 +267,37 @@ std::array<Piece, 4> Play_Field::GetFallingMinoAbsCoord() const
 	return res;
 }
 
-Play_Field::Play_Field() :Signaler({ SIGNAL_LOCKED, SIGNAL_TOUCH_OBSTACLE })
+Play_Field::Play_Field() :Signaler({ SIGNAL_LOCKED, SIGNAL_TOUCH_OBSTACLE, SIGNAL_GAME_OVER})
 {
 	falling = CreateTetrmino();
 	hold = nullptr;
-	for (int i = 0; i < 22; i++)
-		for (int j = 0; j < 10; j++)
-		{
-			field_backs[i][j].relative_coord = Coord(j, i);
-			field_backs[i][j].color = BACKGROUND_COLOR;
-		}
+	EachBackInner([](Piece& p, int x, int y)->void {
+		p.relative_coord = Coord(x, y);
+		p.color = BACKGROUND_COLOR;
+		});
 	for (int i = 0; i < 4; i++)
 		next_queue.push(CreateTetrmino());
 }
 
-void Play_Field::Locking()
+void Play_Field::Lock()
 {
+	if (game_over) return;
+	if (!FallingPiecesCoordsAre([](const Coordinate& coord)->bool {return coord.y >= 2; }))
+	{
+		game_over = true;
+		Emit(SIGNAL_GAME_OVER);
+		return;
+	}
 	int x = falling->bounding_box.x;
 	int y = falling->bounding_box.y;
 	for (auto& piece : falling->pieces)
 	{
 		piece.relative_coord += falling->bounding_box;
-		if (FallingPiecesCoordsAre([](const Coordinate& coord)->bool {return coord.y < 2; }))
-		{
-			game_over = true;
-			Emit(SIGNAL_GAME_OVER);
-			return;
-		}
-
 		piece.flag = piece.BRICK_VALIDE;
 		field_backs[piece.relative_coord.y][piece.relative_coord.x] = piece;
 	}
 	delete falling;
+	Eli();
 	if (hold != nullptr)
 	{
 		falling = hold;
@@ -310,17 +314,62 @@ void Play_Field::Locking()
 		Emit(SIGNAL_GAME_OVER);
 	}
 }
-void Play_Field::Swaping()
+
+bool Play_Field::CheckColEli(int col)
 {
+	bool res = true;
+	for (int x = 0; x < 10; x++)
+	{
+		res &= field_backs[col][x].flag == Piece::BRICK_VALIDE;
+	}
+	return res;
+}
+
+bool Play_Field::Eli()
+{
+	std::vector<int> cols;
+	for (int y = 21; y >= 2; y--)
+	{
+		if (CheckColEli(y))
+		{
+			cols.push_back(y);
+		}
+	}
+
+	int i = 0;
+	while (i < cols.size())
+	{
+		int end = -1;
+		if (i < cols.size() - 1)
+			end = cols[i + 1] - 1;
+		for (int col = cols[i] + i; col - 1 - i > end; col--)
+		{
+			for (int x = 0; x < 10; x++)
+			{
+				field_backs[col][x] = field_backs[col - 1 - i][x];
+				field_backs[col][x].relative_coord = Coord(x, col);
+			}
+		}
+		i++;
+	}
+
+	return cols.size() > 0;
+}
+
+bool Play_Field::Swap()
+{
+	if (game_over) return false;
 	if (hold == nullptr)
 	{
 		hold = falling;
 		falling = next_queue.front();
 		next_queue.pop();
+		return true;
 	}
+	return false;
 }
 
-bool Play_Field::TestingRotation(Tetrmino& mino, _Ori orientation)
+bool Play_Field::TestingRotate(Tetrmino& mino, _Ori orientation) const
 {
 	for (int i = 0; i < 4; i++)
 	{
@@ -335,17 +384,20 @@ bool Play_Field::TestingRotation(Tetrmino& mino, _Ori orientation)
 	return false;
 }
 
-bool Play_Field::Rotation(_Ori orientation)
+bool Play_Field::Rotate(_Ori orientation)
 {
-	return  TestingRotation(*falling, orientation);
+	if (game_over) return false;
+	if (falling->type == _Tetrmino_Class::O) return false;
+	return  TestingRotate(*falling, orientation);
 }
 
-bool Play_Field::Moving(_Ori orientation)
+bool Play_Field::Move(_Ori orientation)
 {
-	return TestingMoving(*falling, orientation);
+	if (game_over) return false;
+	return TestingMove(*falling, orientation);
 }
 
-bool Play_Field::TestingMoving(Tetrmino& mino, _Ori orientation)
+bool Play_Field::TestingMove(Tetrmino& mino, _Ori orientation) const
 {
 	Tetrmino tmino = mino;
 	if (orientation == _Ori::L)
@@ -362,12 +414,13 @@ bool Play_Field::TestingMoving(Tetrmino& mino, _Ori orientation)
 
 bool Play_Field::Drop()
 {
+	if (game_over) return false;
 	int res = TestingDrop(*falling);
 	if (!res) Emit(this->SIGNAL_TOUCH_OBSTACLE);
 	return res;
 }
 
-bool Play_Field::TestingDrop(Tetrmino& mino)
+bool Play_Field::TestingDrop(Tetrmino& mino) const
 {
 	Tetrmino tmino = mino;
 	tmino.bounding_box ^ 1;
@@ -378,6 +431,4 @@ bool Play_Field::TestingDrop(Tetrmino& mino)
 	}
 	return false;
 }
-
-STAGE_MODULE_END
-
+GAME_MODULE_END

@@ -9,7 +9,6 @@ void Game::Init()
 {
 	if (SDL_Init(SDL_INIT_EVERYTHING) != 0)
 	{
-		SDL_Log(ERROR, "Can't init SDL");
 		SDL_Log(SDL_GetError());
 		exit(1);
 	}
@@ -18,14 +17,12 @@ void Game::Init()
 		GAME_WINDOW_WIDTH, GAME_WINDOW_HEIGHT, SDL_WINDOW_SHOWN);
 	if (window == nullptr)
 	{
-		SDL_Log(ERROR, "Can't create window");
 		SDL_Log(SDL_GetError());
 		exit(1);
 	}
 	renderer = SDL_CreateRenderer(window, -1, 0);
 	if (renderer == nullptr)
 	{
-		SDL_Log(ERROR, "Can't create renderer");
 		SDL_Log(SDL_GetError());
 		exit(1);
 	}
@@ -33,7 +30,6 @@ void Game::Init()
 
 void Game::Close()
 {
-	delete stage;
 	SDL_DestroyRenderer(renderer);
 	SDL_DestroyWindow(window);
 	SDL_Quit();
@@ -45,121 +41,266 @@ void Game::Start()
 	bool quit = false;
 	while (!quit)
 	{
-		while (SDL_PollEvent(&event) == 1)
+		while (SDL_PollEvent(&event))
 		{
 			if (event.type == SDL_QUIT)
 				quit = true;
+			HandleInput(event);
 		}
-		stage->Update();
+		Drawer::GetDrawer().Clear();
+		fps_counter++;
+		stage.Update();
+		if (SDL_GetTicks64() - current_time > 1000)
+		{
+			fps = fps_counter;
+			fps_counter = 0;
+			current_time = SDL_GetTicks64();
+		}
+		std::string fps_str = std::to_string(fps);
+		Drawer::GetDrawer().DrawText(fps_str.c_str(), 500, 500, RGBA("#233"));
+		Drawer::GetDrawer().Present();
 	}
 }
 
-inline void Drawer::Present()
+void Game::HandleInput(const SDL_Event& event)
 {
-	SDL_RenderPresent(renderer);
-}
-
-inline void Drawer::SetDrawColor(RGBA color)
-{
-	SDL_SetRenderDrawColor(renderer, color.red, color.green, color.blue, color.alpha * 255);
-}
-
-inline void Drawer::SetDrawColor(HSLA color)
-{
-	SetDrawColor(color.ToRGBA());
-}
-
-inline void Drawer::DrawBrick(const Piece& brick, SDL_Texture* texture)
-{
-	SDL_SetRenderTarget(renderer, texture);
-	DrawBrick(brick);
-}
-
-void Drawer::DrawBrick(const Piece& piece)
-{
-	HSLA hsla(piece.color);
-	SetDrawColor(hsla);
-	SDL_Rect rect;
-	int draw_piece_size = PLAYER_BRICK_SIZE;
-	rect.x = piece.relative_coord.x * PLAYER_BRICK_SIZE;
-	rect.y = piece.relative_coord.y * PLAYER_BRICK_SIZE;
-	rect.w = rect.h = draw_piece_size;
-	SDL_RenderFillRect(renderer, &rect);
-	hsla.lightness += (1 - hsla.lightness) * 0.2;
-	hsla.saturation *= 0.95;
-	if (hsla.hue < 350)
-		hsla.hue += 10;
-	SetDrawColor(hsla);
-	SDL_RenderDrawRect(renderer, &rect);
-}
-
-SDL_Texture* Drawer::DrawPlayField(const Play_Field& field)
-{
-	SDL_Texture* texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888,
-		SDL_TextureAccess::SDL_TEXTUREACCESS_TARGET, PLAYER_BRICK_SIZE * 10, PLAYER_BRICK_SIZE * 22);
-	SDL_SetRenderTarget(renderer, texture);
-	for (int y = 0; y < 22; y++)
-		for (int x = 0; x < 10; x++)
-			DrawBrick(field.field_backs[y][x]);
-	auto falling = field.GetFallingMinoAbsCoord();
-	for (const auto& piece : falling)
-		//if(piece.relative_coord.y >= 2)
-		DrawBrick(piece);
-	SDL_SetRenderTarget(renderer, NULL);
-	return texture;
-}
-
-void Drawer::DrawTextrue(SDL_Texture* texture, const SDL_Rect& s, const SDL_Rect& t)
-{
-	SDL_RenderCopy(renderer, texture, &s, &t);
-}
-
-void Drawer::DrawTextrue(SDL_Texture* texture)
-{
-	SDL_Rect rect;
-	rect.x = 30;
-	rect.y = 20;
-	rect.w = 10 * 32;
-	rect.h = 22 * 32;
-	SDL_RenderCopy(renderer, texture, NULL, &rect);
-}
-
-
-bool Play_Stage::Auto_Fall(uint64_t time)
-{
-	if (time >= fall_time)
+	if (event.type == SDL_EventType::SDL_KEYDOWN)
 	{
-		play_field.Drop();
-		play_field.Rotation(_Ori::R);
-		auto_fall = true;
-		return true;
+		if (event.key.keysym.scancode == SDL_SCANCODE_A)
+		{
+			stage.HandleInput(_KEY_TYPE::LEFT_DOWN);
+		}
+		else if (event.key.keysym.scancode == SDL_SCANCODE_D)
+		{
+			stage.HandleInput(_KEY_TYPE::RIGHT_DOWN);
+		}
+		else if (event.key.keysym.scancode == SDL_SCANCODE_S)
+		{
+			stage.HandleInput(_KEY_TYPE::DOWN_DOWN);
+		}
+		else if (event.key.keysym.scancode == SDL_SCANCODE_W)
+		{
+			stage.HandleInput(_KEY_TYPE::DROP_DOWN);
+		}
+		else if (event.key.keysym.scancode == SDL_SCANCODE_J)
+		{
+			stage.HandleInput(_KEY_TYPE::R_DOWN);
+		}
+		else if (event.key.keysym.scancode == SDL_SCANCODE_K)
+		{
+			stage.HandleInput(_KEY_TYPE::L_DOWN);
+		}
+		else if (event.key.keysym.scancode == SDL_SCANCODE_L)
+		{
+			stage.HandleInput(_KEY_TYPE::HOLD_DOWN);
+		}
 	}
-	return false;
-}
 
-void Play_Stage::Next_Count()
-{
-	play_field.Locking();
-}
-
-void Play_Stage::UpdateContent()
-{
-	CheckAutoFall();
-	auto texture = Drawer::GetDrawer().DrawPlayField(play_field);
-
-	Drawer::GetDrawer().Clear();
-	Drawer::GetDrawer().DrawTextrue(texture);
-	Drawer::GetDrawer().Present();
-
-	SDL_DestroyTexture(texture);
-}
-void Play_Stage::CheckAutoFall()
-{
-	if (auto_fall)
+	if (event.type == SDL_EventType::SDL_KEYUP)
 	{
-		UnblockingAct(std::bind(&Play_Stage::Auto_Fall, this, std::placeholders::_1), fall_time);
-		auto_fall = false;
+		if (event.key.keysym.scancode == SDL_SCANCODE_A)
+		{
+			stage.HandleInput(_KEY_TYPE::LEFT_UP);
+		}
+		else if (event.key.keysym.scancode == SDL_SCANCODE_D)
+		{
+			stage.HandleInput(_KEY_TYPE::RIGHT_UP);
+		}
+		else if (event.key.keysym.scancode == SDL_SCANCODE_S)
+		{
+			stage.HandleInput(_KEY_TYPE::DWON_UP);
+		}
+		else if (event.key.keysym.scancode == SDL_SCANCODE_J)
+		{
+			stage.HandleInput(_KEY_TYPE::R_UP);
+		}
+		else if (event.key.keysym.scancode == SDL_SCANCODE_K)
+		{
+			stage.HandleInput(_KEY_TYPE::L_UP);
+		}
+		else if (event.key.keysym.scancode == SDL_SCANCODE_L)
+		{
+			stage.HandleInput(_KEY_TYPE::HOLD_UP);
+		}
+		else if (event.key.keysym.scancode == SDL_SCANCODE_W)
+		{
+			stage.HandleInput(_KEY_TYPE::DROP_UP);
+		}
 	}
+}
+
+void Drawer::DrawPiece(const Piece& p)
+{
+	int block_with = PLAYER_BRICK_SIZE / 5;
+	HSLA hsla(p.color);
+	for (int i = 0; i < 5; i++)
+	{
+		for (int j = 0; j < 5; j++)
+			DrawBlock(Coord(p.relative_coord.x * PLAYER_BRICK_SIZE + block_with * i, p.relative_coord.y * PLAYER_BRICK_SIZE + block_with * j), hsla.ToRGBA());
+		hsla.lightness *= 0.95;
+		hsla.saturation *= 0.9;
+	}
+}
+
+void Drawer::DrawFalling(const Tetrmino& mino)
+{
+	Tetrmino falling_copy = mino;
+	for (int i = 0; i < 4; i++)
+	{
+		falling_copy.pieces[i].relative_coord += falling_copy.bounding_box;
+		DrawPiece(falling_copy.pieces[i]);
+	}
+}
+
+void Drawer::DrawGhost(const Play_Field& field)
+{
+	Tetrmino falling_copy = field.GetFalling();
+	while (field.TestingDrop(falling_copy));
+	for (int i = 0; i < 4; i++)
+	{
+		falling_copy.pieces[i].relative_coord += falling_copy.bounding_box;
+		falling_copy.pieces[i].color.alpha = 0.2;
+		DrawPiece(falling_copy.pieces[i]);
+	}
+}
+
+
+inline void Play_Stage::HandleInput(_KEY_TYPE key)
+{
+	switch (key)
+	{
+	case RurDog::_KEY_TYPE::DOWN_DOWN:
+		if (!Pressed(PRESSED_DOWN))
+		{
+			Debug("PRESSED DOWN");
+			StartSoftDropCount();
+			SetPressed(PRESSED_DOWN);
+		}
+
+		break;
+	case RurDog::_KEY_TYPE::DWON_UP:
+		if (Pressed(PRESSED_DOWN))
+		{
+			Debug("RELEASE DOWN");
+			Release(PRESSED_DOWN);
+			TryToCancelCountSoftDrop();
+		}
+		break;
+	case RurDog::_KEY_TYPE::LEFT_DOWN:
+		if (!Pressed(PRESSED_LEFT)  && !Pressed(PRESSED_RIGHT))
+		{
+			Debug("PRESSED LEFT");
+			Move(_Ori::L);
+			SetPressed(PRESSED_LEFT);
+			StartDASCount();
+		}
+		break;
+	case RurDog::_KEY_TYPE::LEFT_UP:
+		if (Pressed(PRESSED_LEFT))
+		{
+			Debug("RELEASE LEFT");
+			Release(PRESSED_LEFT);
+			TryToCancelCountDAS();
+			TryToCancelCountARR();
+		}
+		break;
+	case RurDog::_KEY_TYPE::RIGHT_DOWN:
+		if (!Pressed(PRESSED_RIGHT) && !Pressed(PRESSED_LEFT) )
+		{
+			Debug("PRESSED RIGHT");
+			Move(_Ori::R);
+			SetPressed(PRESSED_RIGHT);
+			StartDASCount();
+		}
+		break;
+	case RurDog::_KEY_TYPE::RIGHT_UP:
+		if (Pressed(PRESSED_RIGHT))
+		{
+			Debug("RELEASE RIGHT");
+			Release(PRESSED_RIGHT);
+			TryToCancelCountDAS();
+			TryToCancelCountARR();
+		}
+		break;
+	case RurDog::_KEY_TYPE::HOLD_DOWN:
+		if (!Pressed(PRESSED_HOLD))
+		{
+			Debug("PRESSED HOLD");
+			SetPressed(PRESSED_HOLD);
+			Hold();
+		}
+		break;
+	case RurDog::_KEY_TYPE::R_DOWN:
+		if (!Pressed(PRESSED_R))
+		{
+			Debug("PRESSED R");
+			SetPressed(PRESSED_R);
+			Rotating(_Ori::R);
+		}
+		break;
+	case RurDog::_KEY_TYPE::L_DOWN:
+		if (!Pressed(PRESSED_L))
+		{
+			Debug("PRESSED L");
+			SetPressed(PRESSED_L);
+			Rotating(_Ori::L);
+		}
+		break;
+	case RurDog::_KEY_TYPE::R_UP:
+		if (Pressed(PRESSED_R))
+		{
+			Debug("RELEASE R");
+			Release(PRESSED_R);
+		}
+		break;
+	case RurDog::_KEY_TYPE::L_UP:
+		if (Pressed(PRESSED_L))
+		{
+			Debug("RELEASE L");
+			Release(PRESSED_L);
+		}
+		break;
+	case RurDog::_KEY_TYPE::HOLD_UP:
+		if (Pressed(PRESSED_HOLD))
+		{
+			Debug("RELEASE HOLD");
+			Release(PRESSED_HOLD);
+		}
+		break;
+	case RurDog::_KEY_TYPE::DROP_DOWN:
+		if (!Pressed(PRESSED_DRAP))
+		{
+			Debug("PRESSED HARD DROP");
+			SetPressed(PRESSED_DRAP);
+			HardDrop();
+		}
+		break;
+	case _KEY_TYPE::DROP_UP:
+		if (Pressed(PRESSED_DRAP))
+		{
+			Debug("RELEASE HARD DROP");
+			Release(PRESSED_DRAP);
+		}
+		break;
+	default:
+		break;
+	}
+}
+
+void Play_Stage::Update()
+{
+	Check();
+	auto time = SDL_GetTicks64();
+	Count(time - current_tick64);
+	current_tick64 = time;
+	Drawer::GetDrawer().DrawPlayField(field);
+}
+
+void Game::Destory()
+{
+	Drawer::Destory();
+	game->Close();
+	delete game;
 }
 GAME_MODULE_END
 

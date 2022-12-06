@@ -3,15 +3,46 @@
 #include<string>
 #include<vector>
 #include<cmath>
-
+using ui8 = uint8_t;
+using ui16 = uint16_t;
 GAME_MODULE_BEGIN
-using Tricolor = int;
 
 #define SWAP(x,y) auto temp = x; x = y; y = temp;
-
-constexpr auto RGBA_MAX = 255;
 constexpr auto ALPHA_MAX = 1.0F;
 constexpr auto ALPHA_MIN = 0.0F;
+
+struct Degree
+{
+	ui16 value;
+	constexpr Degree(ui16 v) :value(v % 361) {}
+	constexpr const Degree operator-(Degree& right) const
+	{
+		if (right.value < value)
+			return Degree(value - right.value);
+
+	}
+	constexpr const Degree operator+(Degree& right) const
+	{
+		return Degree(value + right.value);
+	}
+	constexpr Degree operator/(Degree& right) const
+	{
+
+		return Degree(value / right.value);
+	}
+	constexpr Degree operator*(Degree& right) const
+	{
+		return Degree(value * right.value);
+	}
+	constexpr operator ui16() const
+	{
+		return value;
+	}
+	constexpr operator double() const
+	{
+		return (double)value;
+	}
+};
 
 template<typename T>
 T Max(std::initializer_list<T> list)
@@ -53,10 +84,24 @@ private:
 		return 0;
 	}
 public:
-	Tricolor red, green, blue;
+	ui8 red, green, blue;
 	float alpha;
 
-	RGBA(int hex, float alpha = ALPHA_MAX)
+	RGBA(const RGBA& right)
+	{
+		*this = right;
+	}
+
+	const RGBA& operator=(const RGBA& right)
+	{
+		this->red = right.red;
+		this->green = right.green;
+		this->blue = right.blue;
+		this->alpha = right.alpha;
+		return *this;
+	}
+
+	RGBA(int hex, float alpha = 1.0)
 	{
 		red = hex >> 16;
 		green = (hex >> 8) - (red << 8);
@@ -64,7 +109,7 @@ public:
 		this->alpha = alpha;
 	}
 
-	RGBA(std::string hex, float alpha = ALPHA_MAX)
+	RGBA(std::string hex, float alpha = 1.0)
 	{
 		if (!Check(hex)) return;
 		if (hex.size() == 4)
@@ -81,7 +126,7 @@ public:
 		}
 	}
 
-	void SetRGBA(Tricolor r, Tricolor g, Tricolor b, float a)
+	void SetRGBA(ui8 r, ui8 g, ui8 b, float a)
 	{
 		red = r;
 		green = g;
@@ -89,17 +134,17 @@ public:
 		alpha = a;
 	}
 
-	RGBA(Tricolor r = RGBA_MAX,
-		Tricolor g = RGBA_MAX,
-		Tricolor b = RGBA_MAX,
-		float a = ALPHA_MAX)
+	RGBA(ui8 r = 255,
+		ui8 g = 255,
+		ui8 b = 255,
+		float a = 1.0)
 	{
-		if (r > RGBA_MAX || g > RGBA_MAX || b > RGBA_MAX || a > ALPHA_MAX)
+		if (r > 255 || g > 255 || b > 255 || a > 1.0)
 		{
-			red = RGBA_MAX;
-			blue = RGBA_MAX;
-			green = RGBA_MAX;
-			alpha = ALPHA_MAX;
+			red = 255;
+			blue = 255;
+			green = 255;
+			alpha = 1.0;
 			return;
 		}
 		red = r;
@@ -108,13 +153,13 @@ public:
 		alpha = a;
 	}
 
-	double Nor(Tricolor color) const 
+	constexpr double Nor(ui8 color) const
 	{
-		return ((double)color / RGBA_MAX);
+		return ((double)color / 255);
 	}
 
 
-	Tricolor GetHue(double max, double min) const
+	Degree GetHue(double max, double min) const
 	{
 		if (max == min) return 0;
 
@@ -132,12 +177,12 @@ public:
 			if (h >= 0) return h;
 			else return 360 + h;
 		}
-		else if (max == _green) h = 60 * ((_blue -_red) / diff) + 120;
+		else if (max == _green) h = 60 * ((_blue - _red) / diff) + 120;
 		else if (max == _blue) h = 60 * ((_red - _green) / diff) + 240;
 		return h;
 	}
 
-	Tricolor GetHue() const
+	Degree GetHue() const
 	{
 		auto _red = Nor(red);
 		auto _green = Nor(green);
@@ -145,7 +190,7 @@ public:
 		return GetHue(Max({ _red, _green, _blue }), Min({ _red, _green, _blue }));
 	}
 
-	double GetSaturation() const 
+	double GetSaturation() const
 	{
 		auto _red = Nor(red);
 		auto _green = Nor(green);
@@ -183,16 +228,13 @@ RGBA HSLA2RGBA(double H, double S, double L, double A);
 
 struct HSLA
 {
-	const Tricolor MAX_HUE = 360;
-	const Tricolor MIN_HUE = 0;
-
 	const double MAX_SATURATION = 1;
 	const double MIN_SATURATOIN = 0;
 
 	const double MAX_LIGHTNESS = 1;
 	const double MIN_LIGHTNESS = 0;
 
-	Tricolor hue = 0;
+	Degree hue = 0;
 	double saturation = 0;
 	double lightness = 0;
 
@@ -206,7 +248,7 @@ struct HSLA
 		alpha = a;
 	}
 
-	HSLA(RGBA color):HSLA(color.GetHue(), color.GetSaturation(), color.GetLightness(), color.alpha)
+	HSLA(const RGBA& color) :HSLA(color.GetHue(), color.GetSaturation(), color.GetLightness(), color.alpha)
 	{
 
 	}
@@ -227,22 +269,20 @@ struct HSLA
 		alpha = hsla.alpha;
 	}
 
-	RGBA ToRGBA()
+	RGBA ToRGBA() const
 	{
 		return HSLA2RGBA(hue, saturation, lightness, alpha);
 	}
 private:
 };
-
-// Color Struct of Tetrmino
-#define CYAN_COLOR RGBA(CYAN)
-#define YELLO_COLOR RGBA(YELLO)
-#define PURPLE_COLOR RGBA(PURPLE)
-#define GREEN_COLOR RGBA(GREEN)
-#define RED_COLOR RGBA(RED)
-#define BLUE_COLOR RGBA(BLUE)
-#define ORANGE_COLOR RGBA(ORANGE)
-#define BACKGROUND_COLOR RGBA(BACKGROUND)
+#define CYAN_COLOR  RGBA(CYAN)
+#define YELLO_COLOR  RGBA(YELLO)
+#define PURPLE_COLOR  RGBA(PURPLE)
+#define GREEN_COLOR  RGBA(GREEN)
+#define RED_COLOR  RGBA(RED)
+#define BLUE_COLOR  RGBA(BLUE)
+#define ORANGE_COLOR  RGBA(ORANGE)
+#define BACKGROUND_COLOR  RGBA(BACKGROUND)
 struct Coordinate
 {
 	int16_t x, y;

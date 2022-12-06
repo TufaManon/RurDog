@@ -17,3 +17,10 @@ target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE SDL2_ttf::SDL2_ttf)
 if (CMAKE_VERSION VERSION_GREATER 3.12)
   set_property(TARGET RurDog PROPERTY CXX_STANDARD 20)
 endif()
+
+add_custom_command(TARGET ${CMAKE_PROJECT_NAME}
+	POST_BUILD
+	COMMAND ${CMAKE_COMMAND} -E copy_directory
+	"${PROJECT_SOURCE_DIR}/assets"
+	"$<TARGET_FILE_DIR:${CMAKE_PROJECT_NAME}>/assets"
+)

@@ -16,7 +16,7 @@ RGBA HSLA2RGBA(double h, double s, double l, double a)
 {
 	if (s == 0) return RGBA(255 * l, 255 * l, 255 * l, a);
 	double q, p, hk = h / 360;
-	if (l >= 0.5) q = l + s - (l * s);
+	if (l >= 0.5) q = (l + s) - (l * s);
 	else q = l * (1 + s);
 	p = 2 * l - q;
 	
