@@ -8,11 +8,11 @@ constexpr auto GAME_WINDOW_WIDTH = 1280;
 constexpr auto GAME_WINDOW_HEIGHT = 800;
 constexpr auto PLAYER_BRICK_SIZE = 32;
 constexpr auto NET_PLAYER_BRICK_SIZE = 4;
-//锁定延迟
+
 constexpr auto LOCK_DELAY = 500;
-//自动移动延迟
+
 constexpr auto DAS = 99;
-//自动重复速率
+
 constexpr auto ARR = 33;
 
 #define GAME_MODULE_BEGIN namespace RurDog {

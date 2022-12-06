@@ -166,7 +166,7 @@ class Play_Stage
 		{
 			StartARRCount();
 			TryToCancelCountDAS();
-			Debug("Start Count ARR");
+			//Debug("Start Count ARR");
 		}
 
 		if (arr_counter >= ARR)

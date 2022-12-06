@@ -172,7 +172,7 @@ inline void Play_Stage::HandleInput(_KEY_TYPE key)
 	case RurDog::_KEY_TYPE::DOWN_DOWN:
 		if (!Pressed(PRESSED_DOWN))
 		{
-			Debug("PRESSED DOWN");
+			//Debug("PRESSED DOWN");
 			StartSoftDropCount();
 			SetPressed(PRESSED_DOWN);
 		}
@@ -181,7 +181,7 @@ inline void Play_Stage::HandleInput(_KEY_TYPE key)
 	case RurDog::_KEY_TYPE::DWON_UP:
 		if (Pressed(PRESSED_DOWN))
 		{
-			Debug("RELEASE DOWN");
+			//Debug("RELEASE DOWN");
 			Release(PRESSED_DOWN);
 			TryToCancelCountSoftDrop();
 		}
@@ -189,7 +189,7 @@ inline void Play_Stage::HandleInput(_KEY_TYPE key)
 	case RurDog::_KEY_TYPE::LEFT_DOWN:
 		if (!Pressed(PRESSED_LEFT)  && !Pressed(PRESSED_RIGHT))
 		{
-			Debug("PRESSED LEFT");
+			//Debug("PRESSED LEFT");
 			Move(_Ori::L);
 			SetPressed(PRESSED_LEFT);
 			StartDASCount();
@@ -198,7 +198,7 @@ inline void Play_Stage::HandleInput(_KEY_TYPE key)
 	case RurDog::_KEY_TYPE::LEFT_UP:
 		if (Pressed(PRESSED_LEFT))
 		{
-			Debug("RELEASE LEFT");
+			//Debug("RELEASE LEFT");
 			Release(PRESSED_LEFT);
 			TryToCancelCountDAS();
 			TryToCancelCountARR();
@@ -207,7 +207,7 @@ inline void Play_Stage::HandleInput(_KEY_TYPE key)
 	case RurDog::_KEY_TYPE::RIGHT_DOWN:
 		if (!Pressed(PRESSED_RIGHT) && !Pressed(PRESSED_LEFT) )
 		{
-			Debug("PRESSED RIGHT");
+			//Debug("PRESSED RIGHT");
 			Move(_Ori::R);
 			SetPressed(PRESSED_RIGHT);
 			StartDASCount();
@@ -216,7 +216,7 @@ inline void Play_Stage::HandleInput(_KEY_TYPE key)
 	case RurDog::_KEY_TYPE::RIGHT_UP:
 		if (Pressed(PRESSED_RIGHT))
 		{
-			Debug("RELEASE RIGHT");
+			//Debug("RELEASE RIGHT");
 			Release(PRESSED_RIGHT);
 			TryToCancelCountDAS();
 			TryToCancelCountARR();
@@ -225,7 +225,7 @@ inline void Play_Stage::HandleInput(_KEY_TYPE key)
 	case RurDog::_KEY_TYPE::HOLD_DOWN:
 		if (!Pressed(PRESSED_HOLD))
 		{
-			Debug("PRESSED HOLD");
+			//Debug("PRESSED HOLD");
 			SetPressed(PRESSED_HOLD);
 			Hold();
 		}
@@ -233,7 +233,7 @@ inline void Play_Stage::HandleInput(_KEY_TYPE key)
 	case RurDog::_KEY_TYPE::R_DOWN:
 		if (!Pressed(PRESSED_R))
 		{
-			Debug("PRESSED R");
+			//Debug("PRESSED R");
 			SetPressed(PRESSED_R);
 			Rotating(_Ori::R);
 		}
@@ -241,7 +241,7 @@ inline void Play_Stage::HandleInput(_KEY_TYPE key)
 	case RurDog::_KEY_TYPE::L_DOWN:
 		if (!Pressed(PRESSED_L))
 		{
-			Debug("PRESSED L");
+			//Debug("PRESSED L");
 			SetPressed(PRESSED_L);
 			Rotating(_Ori::L);
 		}
@@ -249,28 +249,28 @@ inline void Play_Stage::HandleInput(_KEY_TYPE key)
 	case RurDog::_KEY_TYPE::R_UP:
 		if (Pressed(PRESSED_R))
 		{
-			Debug("RELEASE R");
+			//Debug("RELEASE R");
 			Release(PRESSED_R);
 		}
 		break;
 	case RurDog::_KEY_TYPE::L_UP:
 		if (Pressed(PRESSED_L))
 		{
-			Debug("RELEASE L");
+			//Debug("RELEASE L");
 			Release(PRESSED_L);
 		}
 		break;
 	case RurDog::_KEY_TYPE::HOLD_UP:
 		if (Pressed(PRESSED_HOLD))
 		{
-			Debug("RELEASE HOLD");
+			//Debug("RELEASE HOLD");
 			Release(PRESSED_HOLD);
 		}
 		break;
 	case RurDog::_KEY_TYPE::DROP_DOWN:
 		if (!Pressed(PRESSED_DRAP))
 		{
-			Debug("PRESSED HARD DROP");
+			//Debug("PRESSED HARD DROP");
 			SetPressed(PRESSED_DRAP);
 			HardDrop();
 		}
@@ -278,7 +278,7 @@ inline void Play_Stage::HandleInput(_KEY_TYPE key)
 	case _KEY_TYPE::DROP_UP:
 		if (Pressed(PRESSED_DRAP))
 		{
-			Debug("RELEASE HARD DROP");
+			//Debug("RELEASE HARD DROP");
 			Release(PRESSED_DRAP);
 		}
 		break;
