@@ -1,16 +1,14 @@
 #pragma once
-#include "config.h"
 #include<string>
-#include<vector>
-#include<cmath>
+#include"utils.hpp"
+GAME_MODULE_BEGIN
 using ui8 = uint8_t;
 using ui16 = uint16_t;
-GAME_MODULE_BEGIN
-
-#define SWAP(x,y) auto temp = x; x = y; y = temp;
 constexpr auto ALPHA_MAX = 1.0F;
 constexpr auto ALPHA_MIN = 0.0F;
-
+/// <summary>
+/// the Degree struct is the packaged degree value between 0 and 360.
+/// </summary>
 struct Degree
 {
 	ui16 value;
@@ -43,35 +41,9 @@ struct Degree
 		return (double)value;
 	}
 };
-
-template<typename T>
-T Max(std::initializer_list<T> list)
-{
-	if (list.size() == 0) return 0;
-	auto it = list.begin();
-	auto max = *it;
-	it++;
-	for (; it != list.end(); it++)
-	{
-		if (*it > max)
-			max = *it;
-	}
-	return max;
-}
-
-template<typename T>
-T Min(const std::initializer_list<T> list)
-{
-	auto it = list.begin();
-	auto min = *it;
-	it++;
-	for (; it != list.end(); it++)
-	{
-		if (*it < min)
-			min = *it;
-	}
-	return min;
-}
+/// <summary>
+/// a color storaged as rgb model, the red,green and blue ranges 0 to 255 and the alpha ranges 0 to 1;
+/// </summary>
 struct RGBA
 {
 private:
@@ -90,15 +62,6 @@ public:
 	RGBA(const RGBA& right)
 	{
 		*this = right;
-	}
-
-	const RGBA& operator=(const RGBA& right)
-	{
-		this->red = right.red;
-		this->green = right.green;
-		this->blue = right.blue;
-		this->alpha = right.alpha;
-		return *this;
 	}
 
 	RGBA(int hex, float alpha = 1.0)
@@ -222,9 +185,7 @@ public:
 
 };
 
-double Hue2RGB(double v1, double v2, double vH);
 
-RGBA HSLA2RGBA(double H, double S, double L, double A);
 
 struct HSLA
 {
@@ -273,76 +234,10 @@ struct HSLA
 	{
 		return HSLA2RGBA(hue, saturation, lightness, alpha);
 	}
+
 private:
+	double Hue2RGB(double v1, double v2, double vH) const;
+
+	RGBA HSLA2RGBA(double H, double S, double L, double A) const;
 };
-#define CYAN_COLOR  RGBA(CYAN)
-#define YELLO_COLOR  RGBA(YELLO)
-#define PURPLE_COLOR  RGBA(PURPLE)
-#define GREEN_COLOR  RGBA(GREEN)
-#define RED_COLOR  RGBA(RED)
-#define BLUE_COLOR  RGBA(BLUE)
-#define ORANGE_COLOR  RGBA(ORANGE)
-#define BACKGROUND_COLOR  RGBA(BACKGROUND)
-struct Coordinate
-{
-	int16_t x, y;
-
-	// the default coordinate is (0,0)
-	Coordinate(int16_t x = 0, int16_t y = 0)
-	{
-		this->x = x;
-		this->y = y;
-	}
-	const Coordinate operator+(const Coordinate& right) const
-	{
-		return Coordinate(x + right.x, y + right.y);
-	}
-	const Coordinate& operator+=(const Coordinate& right)
-	{
-		this->x += right.x;
-		this->y += right.y;
-		return *this;
-	}
-
-	const Coordinate& operator-=(const Coordinate& right)
-	{
-		this->x -= right.x;
-		this->y -= right.y;
-		return *this;
-	}
-
-	Coordinate& operator=(const Coordinate& right)
-	{
-		this->x = right.x;
-		this->y = right.y;
-		return *this;
-	}
-
-	const Coordinate operator-(const Coordinate& right) const
-	{
-		return Coordinate(x - right.x, y - right.y);
-	}
-	bool operator==(const Coordinate& right) const
-	{
-		return x == right.x && y == right.y;
-	}
-	const Coordinate& operator<<(int off)
-	{
-		this->x -= off;
-		return *this;
-	}
-	const Coordinate& operator>>(int off)
-	{
-		this->x += off;
-		return *this;
-	}
-
-	const Coordinate& operator^(int off)
-	{
-		this->y += off;
-		return *this;
-	}
-};
-
-#define Coord(x,y) Coordinate(x,y)
 GAME_MODULE_END

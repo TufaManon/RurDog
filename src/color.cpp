@@ -1,4 +1,4 @@
-#include "utils.h"
+#include "color.h"
 GAME_MODULE_BEGIN
 bool RGBA::Check(std::string hex)
 {
@@ -12,18 +12,19 @@ bool RGBA::Check(std::string hex)
 	}
 	return right_head && right_range && right_size;
 }
-RGBA HSLA2RGBA(double h, double s, double l, double a)
+
+RGBA HSLA::HSLA2RGBA(double h, double s, double l, double a) const
 {
 	if (s == 0) return RGBA(255 * l, 255 * l, 255 * l, a);
 	double q, p, hk = h / 360;
 	if (l >= 0.5) q = (l + s) - (l * s);
 	else q = l * (1 + s);
 	p = 2 * l - q;
-	
+
 	return RGBA(255 * Hue2RGB(p, q, hk + (1.0 / 3.0)), 255 * Hue2RGB(p, q, hk), 255 * Hue2RGB(p, q, hk - (1.0 / 3.0)), a);
 }
 
-double Hue2RGB(double v1, double v2, double vH)
+double HSLA::Hue2RGB(double v1, double v2, double vH) const
 {
 	if (vH < 0) vH += 1.0;
 	if (vH > 1) vH -= 1.0;
